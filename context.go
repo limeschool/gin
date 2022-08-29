@@ -6,7 +6,6 @@ package gin
 
 import (
 	"errors"
-	"github.com/limeschool/gin/ext"
 	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
@@ -89,11 +88,13 @@ type Context struct {
 
 	// Ext
 	// config center
-	Config ext.IConfig
+	Config IConfig
 	// log
 	Log *zap.Logger
 	// trace-id
 	TraceID string
+	// server_name 服务名
+	ServiceName string
 }
 
 /************************************/

@@ -66,7 +66,7 @@ func (c *local) Watch(v *viper.Viper) {
 				continue
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				if err = c.Get(v); err != nil {
+				if err = c.Get(v); err != nil && CallBack != nil {
 					CallBack(v)
 				}
 			}

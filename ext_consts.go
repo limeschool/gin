@@ -1,4 +1,4 @@
-package ext
+package gin
 
 var TraceID = "trace-id"
 var ServiceID = "service"

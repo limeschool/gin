@@ -1,4 +1,4 @@
-package ext
+package gin
 
 import (
 	"github.com/spf13/viper"
@@ -30,7 +30,7 @@ func initLogKeys(v *viper.Viper) {
 	}
 }
 
-// newLog 链路日志
+// newLo 链路日志
 func newLog(id string) *zap.Logger {
 	return globalLog.With(zap.Any(TraceID, id))
 }

@@ -1,19 +1,23 @@
-package ext
+package gin
 
 import (
 	"flag"
-	"github.com/limeschool/gin/ext/config_drive"
+	"github.com/limeschool/gin/config_drive"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
 type IConfig interface {
 	Get(key string) interface{}
 	GetString(key string) string
+	GetDefaultString(key string, def string) string
 	GetBool(key string) bool
 	GetInt(key string) int
+	GetDefaultInt(key string, def int) int
 	GetInt32(key string) int32
 	GetInt64(key string) int64
 	GetUint(key string) uint
@@ -22,6 +26,7 @@ type IConfig interface {
 	GetFloat64(key string) float64
 	GetTime(key string) time.Time
 	GetDuration(key string) time.Duration
+	GetDefaultDuration(key string, def time.Duration) time.Duration
 	GetIntSlice(key string) []int
 	GetStringSlice(key string) []string
 	GetStringMap(key string) map[string]interface{}
@@ -35,19 +40,28 @@ type Config struct {
 	logger *zap.Logger
 }
 
-func newConfig(log *zap.Logger) IConfig {
+var configPool = sync.Pool{New: func() any {
 	return &Config{
-		logger: log,
+		logger: nil,
 	}
+}}
+
+func newConfig(log *zap.Logger) IConfig {
+	conf := configPool.Get().(*Config)
+	conf.logger = log.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1))
+	configPool.Put(conf)
+	return conf
 }
 
 func WatchConfig(f config_drive.CallFunc) {
 	config_drive.CallBack = f
+	// 这只之后进行初始化执行
+	f(globalConfig)
 }
 
-var configFile = flag.String("c", "Config/dev.json", "the Config file path")
+var configFile = flag.String("c", "config/dev.json", "the Config file path")
 
-func initConfig() {
+func initConfig() *viper.Viper {
 	flag.Parse()
 	conf := config_drive.Config{}
 	if configFile == nil {
@@ -67,13 +81,7 @@ func initConfig() {
 			Path:  *configFile,
 		}
 	}
-	globalConfig = config_drive.Init(&conf)
-	// 初始化全局服务名
-	globalServiceName = globalConfig.GetString("service")
-	if globalServiceName == "" {
-		panic("Config service field not found")
-	}
-
+	return config_drive.Init(&conf)
 }
 
 func (c *Config) Set(key string, value interface{}) {
@@ -93,7 +101,7 @@ func (c *Config) GetString(key string) string {
 	return res
 }
 
-func (c *Config) GetStringDefault(key string, def string) string {
+func (c *Config) GetDefaultString(key string, def string) string {
 	res := globalConfig.GetString(key)
 	if res == "" {
 		res = def
@@ -114,7 +122,7 @@ func (c *Config) GetInt(key string) int {
 	return res
 }
 
-func (c *Config) GetIntDefault(key string, def int) int {
+func (c *Config) GetDefaultInt(key string, def int) int {
 	res := globalConfig.GetInt(key)
 	if res == 0 {
 		res = def
@@ -159,7 +167,7 @@ func (c *Config) GetFloat64(key string) float64 {
 	return res
 }
 
-func (c *Config) GetFloat64Default(key string, def float64) float64 {
+func (c *Config) GetDefaultFloat64(key string, def float64) float64 {
 	res := globalConfig.GetFloat64(key)
 	if res == 0 {
 		res = def
@@ -180,7 +188,7 @@ func (c *Config) GetDuration(key string) time.Duration {
 	return res
 }
 
-func (c *Config) GetDurationDefault(key string, duration time.Duration) time.Duration {
+func (c *Config) GetDefaultDuration(key string, duration time.Duration) time.Duration {
 	res := globalConfig.GetDuration(key)
 	if res.String() == "" {
 		res = duration

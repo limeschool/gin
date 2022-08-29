@@ -6,7 +6,6 @@ package gin
 
 import (
 	"fmt"
-	"github.com/limeschool/gin/ext"
 	"html/template"
 	"net"
 	"net/http"
@@ -178,6 +177,7 @@ var _ IRouter = &Engine{}
 // - UseRawPath:             false
 // - UnescapePathValues:     true
 func New() *Engine {
+	initGlobal()
 	debugPrintWARNINGNew()
 	engine := &Engine{
 		RouterGroup: RouterGroup{
@@ -213,7 +213,7 @@ func New() *Engine {
 func Default() *Engine {
 	debugPrintWARNINGDefault()
 	engine := New()
-	engine.Use(Logger(), Recovery(), ext.Logger())
+	engine.Use(ExtCors(), ExtRequestInfo(), ExtInit(), ExtRecovery, ExtLogger(), ExtTimeout(), ExtCpuLoad(), ExtLimit())
 	return engine
 }
 
