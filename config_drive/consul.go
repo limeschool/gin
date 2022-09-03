@@ -5,6 +5,7 @@ import (
 	consulApi "github.com/hashicorp/consul/api"
 	"github.com/spf13/viper"
 	"log"
+	"strings"
 )
 
 type consul struct {
@@ -15,30 +16,41 @@ type consul struct {
 }
 
 // NewConsul 创建consul对象，用于获取和监听日志
-func NewConsul(conf *Config) ConfigService {
+func NewConsul(conf *Config) (ConfigService, error) {
 	client, err := consulApi.NewClient(&consulApi.Config{
 		Address: conf.Host,
-		Token:   conf.Password,
+		Token:   conf.Token,
 	})
 	if err != nil {
-		panic("consul config init err:" + err.Error())
+		return nil, err
 	}
-	return &consul{client: client, path: conf.Path, tp: conf.Type}
+	return &consul{client: client, path: conf.Path, tp: conf.Type}, nil
 }
 
 // Init 初始化consul配置信息
 func (c *consul) Init() *viper.Viper {
 	v := viper.New()
 	v.SetConfigType(c.tp)
-	if err := c.Get(v); err != nil {
+	if err := c.GetViper(v); err != nil {
 		panic("consul config get err:" + err.Error())
 	}
 	go c.Watch(v)
 	return v
 }
 
-// Get 从中间件中获取配置
-func (c *consul) Get(v *viper.Viper) error {
+// GetViper 从中间件中获取配置
+func (c *consul) GetViper(v *viper.Viper) error {
+	data, err := c.Get()
+	if err != nil {
+		return err
+	}
+	if err = v.ReadConfig(bytes.NewBuffer(data)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *consul) Get() ([]byte, error) {
 	var q *consulApi.QueryOptions
 	if c.wait != nil {
 		q = &consulApi.QueryOptions{
@@ -47,19 +59,23 @@ func (c *consul) Get(v *viper.Viper) error {
 	}
 	data, meta, err := c.client.KV().Get(c.path, q)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	c.wait = &meta.LastIndex
-	if err = v.ReadConfig(bytes.NewBuffer(data.Value)); err != nil {
-		return err
-	}
-	return nil
+	return data.Value, nil
+}
+
+func (c *consul) Set(value string) error {
+	path := strings.TrimPrefix(c.path, "/")
+	kv := &consulApi.KVPair{Key: path + "key", Value: []byte(value)}
+	_, err := c.client.KV().Put(kv, nil)
+	return err
 }
 
 // Watch 监听配置变更
 func (c *consul) Watch(v *viper.Viper) {
 	for {
-		if err := c.Get(v); err != nil {
+		if err := c.GetViper(v); err != nil {
 			log.Println("consul监听变更信息获取失败")
 			continue
 		}
@@ -67,4 +83,8 @@ func (c *consul) Watch(v *viper.Viper) {
 			CallBack(v)
 		}
 	}
+}
+
+func (c *consul) SetPath(key string) {
+	c.path += key
 }

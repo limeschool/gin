@@ -71,7 +71,8 @@ func initConfig() *viper.Viper {
 			Type:     os.Getenv("Type"),
 			Username: os.Getenv("Username"),
 			Password: os.Getenv("Password"),
-			Path:     os.Getenv("Path"),
+			Token:    os.Getenv("Token"),
+			Path:     os.Getenv("Prefix") + "/" + globalServiceName,
 		}
 	} else {
 		temp := strings.Split(*configFile, ".")

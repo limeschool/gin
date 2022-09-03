@@ -8,6 +8,7 @@ import (
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcdApi "go.etcd.io/etcd/client/v3"
 	"strings"
+	"time"
 )
 
 type etcd struct {
@@ -17,39 +18,61 @@ type etcd struct {
 	tp     string
 }
 
-func NewEtcd(conf *Config) ConfigService {
+func NewEtcd(conf *Config) (ConfigService, error) {
 	client, err := etcdApi.New(etcdApi.Config{
 		Endpoints:   strings.Split(conf.Host, ","),
-		DialTimeout: 10,
+		DialTimeout: 10 * time.Second,
 		Username:    conf.Username,
 		Password:    conf.Password,
 	})
 	if err != nil {
-		panic("etcd config init err:" + err.Error())
+		return nil, err
 	}
-	return &etcd{client: client, path: conf.Path, tp: conf.Type}
+	ctx, _ := context.WithTimeout(context.TODO(), 10*time.Second)
+	if _, err = client.Get(ctx, "test"); err != nil {
+		return nil, errors.New("etcd connect fail")
+	}
+	return &etcd{client: client, path: conf.Path, tp: conf.Type}, nil
 }
 
 func (c *etcd) Init() *viper.Viper {
 	v := viper.New()
 	v.SetConfigType(c.tp)
-	if err := c.Get(v); err != nil {
+	if err := c.GetViper(v); err != nil {
 		panic("etcd config get err:" + err.Error())
 	}
 	go c.Watch(v)
 	return v
 }
 
+func (c *etcd) Set(value string) error {
+	ctx, _ := context.WithTimeout(context.TODO(), 10*time.Second)
+	_, err := c.client.KV.Put(ctx, c.path, value)
+	return err
+}
+
 // Get 从中间件中获取配置
-func (c *etcd) Get(v *viper.Viper) error {
-	data, err := c.client.KV.Get(context.TODO(), c.path)
-	if err != nil || len(data.Kvs) == 0 {
-		return errors.New("get kv is fail:" + err.Error())
+func (c *etcd) GetViper(v *viper.Viper) error {
+	data, err := c.Get()
+	if err != nil {
+		return err
 	}
-	if err = v.ReadConfig(bytes.NewBuffer(data.Kvs[0].Value)); err != nil {
+	if err = v.ReadConfig(bytes.NewBuffer(data)); err != nil {
 		return err
 	}
 	return nil
+}
+
+// Get 从中间件中获取配置
+func (c *etcd) Get() ([]byte, error) {
+	data, err := c.client.KV.Get(context.TODO(), c.path)
+	if err != nil {
+		return nil, err
+	}
+	if len(data.Kvs) == 0 {
+		return nil, errors.New("not exist configure")
+	}
+	return data.Kvs[0].Value, nil
 }
 
 // Watch 监听配置变更
@@ -70,4 +93,8 @@ func (c *etcd) Watch(v *viper.Viper) {
 			}
 		}
 	}
+}
+
+func (c *etcd) SetPath(key string) {
+	c.path += key
 }

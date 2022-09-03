@@ -15,27 +15,32 @@ type zookeeper struct {
 	tp     string
 }
 
-func NewZK(conf *Config) ConfigService {
+func NewZK(conf *Config) (ConfigService, error) {
 	client, _, err := zk.Connect(strings.Split(conf.Host, ","), 10*time.Second)
 	if err != nil {
-		panic("zk config init err:" + err.Error())
+		return nil, err
 	}
-	return &zookeeper{client: client, path: conf.Path, tp: conf.Type}
+	if conf.Username != "" {
+		if err = client.AddAuth("digest", []byte(conf.Username+":"+conf.Password)); err != nil {
+			panic(err)
+		}
+	}
+	return &zookeeper{client: client, path: conf.Path, tp: conf.Type}, nil
 }
 
 func (z *zookeeper) Init() *viper.Viper {
 	v := viper.New()
 	//v := viper.NewWithOptions(viper.)
 	v.SetConfigType(z.tp)
-	if err := z.Get(v); err != nil {
+	if err := z.GetViper(v); err != nil {
 		panic("zk config get err:" + err.Error())
 	}
 	go z.Watch(v)
 	return v
 }
 
-func (z *zookeeper) Get(v *viper.Viper) error {
-	data, _, err := z.client.Get(z.path)
+func (z *zookeeper) GetViper(v *viper.Viper) error {
+	data, err := z.Get()
 	if err != nil {
 		return err
 	}
@@ -43,6 +48,16 @@ func (z *zookeeper) Get(v *viper.Viper) error {
 		return err
 	}
 	return nil
+}
+
+func (z *zookeeper) Get() ([]byte, error) {
+	data, _, err := z.client.Get(z.path)
+	return data, err
+}
+
+func (z *zookeeper) Set(value string) error {
+	_, err := z.client.Set(z.path, []byte(value), 1.0)
+	return err
 }
 
 func (z *zookeeper) Watch(v *viper.Viper) {
@@ -61,4 +76,8 @@ func (z *zookeeper) Watch(v *viper.Viper) {
 			}
 		}
 	}
+}
+
+func (z *zookeeper) SetPath(key string) {
+	z.path += key
 }
