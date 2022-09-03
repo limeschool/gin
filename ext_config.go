@@ -1,12 +1,8 @@
 package gin
 
 import (
-	"flag"
 	"github.com/limeschool/gin/config_drive"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"os"
-	"strings"
 	"sync"
 	"time"
 )
@@ -57,32 +53,6 @@ func WatchConfig(f config_drive.CallFunc) {
 	config_drive.CallBack = f
 	// 这只之后进行初始化执行
 	f(globalConfig)
-}
-
-var configFile = flag.String("c", "config/dev.json", "the Config file path")
-
-func initConfig() *viper.Viper {
-	flag.Parse()
-	conf := config_drive.Config{}
-	if configFile == nil {
-		conf = config_drive.Config{
-			Drive:    os.Getenv("Drive"),
-			Host:     os.Getenv("Host"),
-			Type:     os.Getenv("Type"),
-			Username: os.Getenv("Username"),
-			Password: os.Getenv("Password"),
-			Token:    os.Getenv("Token"),
-			Path:     os.Getenv("Prefix") + "/" + globalServiceName,
-		}
-	} else {
-		temp := strings.Split(*configFile, ".")
-		conf = config_drive.Config{
-			Drive: "local",
-			Type:  temp[len(temp)-1],
-			Path:  *configFile,
-		}
-	}
-	return config_drive.Init(&conf)
 }
 
 func (c *Config) Set(key string, value interface{}) {

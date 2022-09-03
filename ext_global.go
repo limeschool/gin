@@ -3,6 +3,7 @@ package gin
 import (
 	"github.com/casbin/casbin/v2"
 	"github.com/go-redis/redis/v8"
+	"github.com/limeschool/gin/config_drive"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
@@ -24,7 +25,7 @@ var (
 
 func initGlobal() {
 	// 初始化全局配置
-	globalConfig = initConfig()
+	globalConfig = config_drive.GetConfig(globalServiceName)
 	// 初始化全局服务名
 	globalServiceName = globalConfig.GetString("service")
 	if globalServiceName == "" {

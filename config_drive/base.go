@@ -1,7 +1,15 @@
 package config_drive
 
 import (
+	"encoding/json"
+	"flag"
+	"fmt"
 	"github.com/spf13/viper"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 type Config struct {
@@ -46,4 +54,49 @@ func Init(conf *Config) *viper.Viper {
 		panic("config drive fail:" + err.Error())
 	}
 	return cs.Init()
+}
+
+var configFile = flag.String("c", "config/dev.json", "the Config file path")
+
+func GetConfig(srv string) *viper.Viper {
+	flag.Parse()
+	conf := &Config{}
+	if configFile == nil {
+		addr := os.Getenv("CONFIG_ADDR")
+		token := os.Getenv("CONFIG_TOKEN")
+		if addr == "" {
+			panic("环境变量CONFIG_ADDR未配置")
+		}
+		if token == "" {
+			panic("环境变量CONFIG_TOKEN未配置")
+		}
+		url := fmt.Sprintf("%v/configure/config?service=%v&token=%v", addr, srv, token)
+		client := http.Client{Timeout: 10 * time.Second}
+		response, err := client.Get(url)
+		if err != nil {
+			panic("请求配置中心信息异常" + err.Error())
+		}
+		defer response.Body.Close()
+		respData := struct {
+			Code int64   `json:"code"`
+			Msg  string  `json:"msg"`
+			Data *Config `json:"data"`
+		}{}
+		b, _ := io.ReadAll(response.Body)
+		if json.Unmarshal(b, &respData) != nil {
+			panic("解析配置中心失败")
+		}
+		if respData.Code != 200 || respData.Data == nil {
+			panic("获取配置连接信息失败:" + respData.Msg)
+		}
+		conf = respData.Data
+	} else {
+		temp := strings.Split(*configFile, ".")
+		conf = &Config{
+			Drive: "local",
+			Type:  temp[len(temp)-1],
+			Path:  *configFile,
+		}
+	}
+	return Init(conf)
 }
