@@ -3,6 +3,7 @@ package gin
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/didip/tollbooth"
 	"github.com/google/uuid"
@@ -172,5 +173,17 @@ func ExtRequestInfo() HandlerFunc {
 			zap.Any("res", blw.Body.String()),
 			zap.Any("status", ctx.Writer.Status()),
 		)
+	}
+}
+
+func ExtRequestTokenAuth() HandlerFunc {
+	return func(ctx *Context) {
+		token := ctx.Config.Get("request_token")
+		if ctx.Request.Header.Get("token") == token {
+			ctx.Next()
+		} else {
+			ctx.RespError(errors.New("token 验证失败"))
+			ctx.Abort()
+		}
 	}
 }

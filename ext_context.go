@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/casbin/casbin/v2"
 	"github.com/go-redis/redis/v8"
+	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
@@ -65,4 +66,13 @@ func (c *Context) Context() context.Context {
 		ctx = context.WithValue(ctx, key, val)
 	}
 	return ctx
+}
+
+func (c *Context) Http() *request {
+	client := resty.New()
+	client.SetRetryWaitTime(globalRequestConfig.RetryWaitTime)
+	client.SetRetryMaxWaitTime(globalRequestConfig.MaxRetryWaitTime)
+	client.SetRetryCount(globalRequestConfig.RetryCount)
+	client.SetTimeout(globalRequestConfig.Timeout)
+	return &request{ctx: c, request: client.R()}
 }
