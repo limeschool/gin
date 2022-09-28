@@ -178,7 +178,7 @@ func ExtRequestInfo() HandlerFunc {
 
 func ExtRequestTokenAuth() HandlerFunc {
 	return func(ctx *Context) {
-		token := ctx.Config.Get("request_token")
+		token := ctx.Config.Get("request-token")
 		if ctx.Request.Header.Get("token") == token {
 			ctx.Next()
 		} else {

@@ -10,7 +10,9 @@ import (
 type redisConfig struct {
 	Enable   bool   `json:"enable" mapstructure:"enable"` //是否启用redis
 	Name     string `json:"name"  mapstructure:"name"`
-	Host     string `json:"host" mapstructure:"host"`         //redis的连接地址
+	Network  string `json:"network" mapstructure:"network"`
+	Host     string `json:"host" mapstructure:"host"` //redis的连接地址
+	Username string `json:"username" mapstructure:"username"`
 	Password string `json:"password" mapstructure:"password"` //redis的密码
 	DB       int    `json:"db" mapstructure:"db"`
 	PoolSize int    `json:"pool_size" mapstructure:"pool_size"`
@@ -34,7 +36,9 @@ func initRedis() {
 			return
 		}
 		client := redis.NewClient(&redis.Options{
+			Network:  conf.Network,
 			Addr:     conf.Host,
+			Username: conf.Username,
 			Password: conf.Password,
 			PoolSize: conf.PoolSize,
 			DB:       conf.DB,
