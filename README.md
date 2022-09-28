@@ -104,6 +104,71 @@ func main() {
 	e.Run(":8000")
 }
 ```
+##### 快速实现数据的查询
+
+在开发中，我们通常使用结构体来进行参数接收，然后进行数据操作 我们可以在接收的结构体中，定义sql tag 来进行规定数据查询相关的规则，实现快速查询
+``` 
+package main
+
+import (
+	"github.com/limeschool/gin"
+)
+
+type LoginLogRequest struct {
+	Page     int    `json:"page" form:"page" binding:"required" sql:"-"` // - 标识忽略
+	Count    int    `json:"count" form:"count"  binding:"required,max=50"  sql:"-"` // - 标识忽略
+	Username string `json:"username" form:"username"` // sql 不存在则默认为 username = 参数值
+	Status   *bool  `json:"status" form:"status"`
+	Start    int64  `json:"start" form:"start" sql:"> ?" field:"created_at"` // created_at > 参数值
+	End      int64  `json:"end" form:"end" sql:"< ?" field:"created_at"` // created_at < 参数值
+}
+
+type LoginLog struct {
+	gin.CreateModel
+	Username    string `json:"username"`
+	IP          string `json:"ip"`
+	Address     string `json:"address"`
+	Browser     string `json:"browser"`
+	Device      string `json:"device"`
+	Status      bool   `json:"status"`
+	Description string `json:"description"`
+}
+
+func (l LoginLog) Table() string {
+	return "login_log"
+}
+
+func Page(ctx *gin.Context, page, count int, m interface{}) ([]LoginLog, int64, error) {
+	var model LoginLog
+	var list []LoginLog
+	var total int64
+	db := ctx.Mysql("ums").Table(model.Table())
+	db = gin.GormWhere(db, model.Table(), m) //这里会去反射解析结构体中的sql标签
+	if err := db.Count(&total).Error; err != nil {
+		return nil, total, err
+	}
+	return list, total, db.Order("created_at desc").Offset((page - 1) * count).Limit(count).Find(&list).Error
+}
+
+func main() {
+	en := gin.Default()
+	en.Use(gin.ExtCors())
+	en.GET("/logs", func(ctx *gin.Context) {
+		in := &LoginLogRequest{}
+		if err := ctx.ShouldBind(in); err != nil {
+			return
+		}
+		list, _, err := Page(ctx, 1, 10, in)
+		if err != nil {
+			gin.ResponseError(ctx, err)
+		} else {
+			gin.ResponseData(ctx, list)
+		}
+	})
+
+	en.Run(":9001")
+}
+```
 
 ### mongo 使用
 
