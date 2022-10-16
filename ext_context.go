@@ -11,8 +11,10 @@ import (
 	"sync"
 )
 
-func NewContext() *Context {
-	traceId := uuid.New().String()
+func NewContext(traceId string) *Context {
+	if traceId == "" {
+		traceId = uuid.New().String()
+	}
 	log := newLog(traceId)
 	return &Context{
 		mu:          sync.RWMutex{},
