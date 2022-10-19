@@ -34,16 +34,19 @@ func ExtLogger() HandlerFunc {
 	}
 }
 
-func ExtRecovery(c *Context) {
+func ExtRecovery(ctx *Context) {
 	defer func() {
 		if err := recover(); err != nil {
 			message := fmt.Sprintf("%s", err)
-			c.Log.WithOptions(zap.AddCallerSkip(1)).Error(message, zap.Any("panic", panicErr()), zap.Any("params", requestParams(c)))
-			c.JSON(http.StatusInternalServerError, map[string]any{"code": 500, "msg": "Internal Server Error"})
-			c.Abort()
+			ctx.Log.WithOptions(zap.AddCallerSkip(1)).Error(message,
+				zap.Any("panic", panicErr()),
+				zap.Any("params", requestParams(ctx)),
+			)
+			CustomResponseError(ctx, http.StatusInternalServerError, "Internal Server Fail")
+			ctx.Abort()
 		}
 	}()
-	c.Next()
+	ctx.Next()
 }
 
 // ExtTimeout 客户端请求超时
@@ -66,7 +69,7 @@ func ExtTimeout() HandlerFunc {
 
 		select {
 		case <-c.Done():
-			ctx.JSON(500, map[string]any{"code": 500, "msg": "Internal Server Timeout"})
+			CustomResponseError(ctx, http.StatusInternalServerError, "Internal Server Timeout")
 			ctx.Abort()
 		case <-done:
 		}
@@ -82,7 +85,7 @@ func ExtCpuLoad() HandlerFunc {
 		}
 		promise, err := sd.Allow()
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, map[string]any{"code": 500, "msg": "Internal Server Over Max Request"})
+			CustomResponseError(ctx, http.StatusInternalServerError, "Internal Server Over Max Request")
 			ctx.Abort()
 		}
 		promise.Pass()
@@ -96,9 +99,8 @@ func ExtLimit() HandlerFunc {
 		if !globalSystemConfig.ClientLimit.Enable {
 			return
 		}
-
 		if httpError := tollbooth.LimitByRequest(limit, ctx.Writer, ctx.Request); httpError != nil {
-			ctx.JSON(500, map[string]any{"code": 500, "msg": "Internal Server Limit"})
+			CustomResponseError(ctx, http.StatusInternalServerError, "Internal Server Limit")
 			ctx.Abort()
 		}
 	}
@@ -107,19 +109,13 @@ func ExtLimit() HandlerFunc {
 // Success 健康检查
 func Success() HandlerFunc {
 	return func(ctx *Context) {
-		ctx.JSON(200, &Response{
-			Code: 200,
-			Msg:  "success",
-		})
+		ctx.RespSuccess()
 	}
 }
 
 func Resp404() HandlerFunc {
 	return func(ctx *Context) {
-		ctx.JSON(404, &Response{
-			Code: 404,
-			Msg:  "此接口不存在",
-		})
+		ctx.RespError(errors.New("此接口不存在"))
 	}
 }
 

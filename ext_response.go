@@ -83,6 +83,16 @@ func ResponseError(ctx *Context, err error) {
 	}
 }
 
+func CustomResponseError(ctx *Context, code int, msg string) {
+	if ctx.Writer.Size() != -1 {
+		return
+	}
+	ctx.JSON(code, &Response{
+		Code: code,
+		Msg:  msg,
+	})
+}
+
 type ResponseWriterWrapper struct {
 	ResponseWriter
 	Body *bytes.Buffer // 缓存
