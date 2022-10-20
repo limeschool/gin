@@ -40,6 +40,9 @@ func ParseResponse(data []byte) *Response {
 }
 
 func ResponseData(ctx *Context, data interface{}) {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+
 	if ctx.Writer.Size() != -1 {
 		return
 	}
@@ -51,6 +54,9 @@ func ResponseData(ctx *Context, data interface{}) {
 }
 
 func ResponseList(ctx *Context, page, count, total int, data interface{}) {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+
 	if ctx.Writer.Size() != -1 {
 		return
 	}
@@ -67,6 +73,9 @@ func ResponseList(ctx *Context, page, count, total int, data interface{}) {
 }
 
 func ResponseError(ctx *Context, err error) {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+
 	if ctx.Writer.Size() != -1 {
 		return
 	}
@@ -84,6 +93,9 @@ func ResponseError(ctx *Context, err error) {
 }
 
 func CustomResponseError(ctx *Context, code int, msg string) {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+
 	if ctx.Writer.Size() != -1 {
 		return
 	}
