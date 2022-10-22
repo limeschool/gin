@@ -92,6 +92,25 @@ func ResponseError(ctx *Context, err error) {
 	}
 }
 
+func ResponseJson(ctx *Context, data any) {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+
+	if ctx.Writer.Size() != -1 {
+		return
+	}
+	ctx.JSON(200, data)
+}
+
+func ResponseXml(ctx *Context, data any) {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+	if ctx.Writer.Size() != -1 {
+		return
+	}
+	ctx.XML(200, data)
+}
+
 func CustomResponseError(ctx *Context, code int, msg string) {
 	ctx.mu.Lock()
 	defer ctx.mu.Unlock()

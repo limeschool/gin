@@ -38,6 +38,14 @@ func (c *Context) RespData(data interface{}) {
 	ResponseData(c, data)
 }
 
+func (c *Context) RespJson(data interface{}) {
+	ResponseJson(c, data)
+}
+
+func (c *Context) RespXml(data interface{}) {
+	ResponseXml(c, data)
+}
+
 func (c *Context) RespList(page, count, total int, data interface{}) {
 	ResponseList(c, page, count, total, data)
 }
