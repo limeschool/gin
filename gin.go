@@ -213,7 +213,7 @@ func New() *Engine {
 func Default() *Engine {
 	debugPrintWARNINGDefault()
 	engine := New()
-	engine.Use(ExtCors(), ExtRequestInfo(), ExtInit(), ExtRecovery, ExtLogger(), ExtTimeout(), ExtCpuLoad(), ExtLimit())
+	engine.Use(ExtCors(), ExtRequestInfo(), ExtInit(), ExtRecovery, ExtLogger(), ExtTimeout())
 	return engine
 }
 

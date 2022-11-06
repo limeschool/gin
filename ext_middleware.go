@@ -5,9 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/didip/tollbooth"
 	"github.com/google/uuid"
-	"github.com/zeromicro/go-zero/core/load"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
@@ -52,12 +50,12 @@ func ExtRecovery(ctx *Context) {
 // ExtTimeout 客户端请求超时
 func ExtTimeout() HandlerFunc {
 	return func(ctx *Context) {
-		t := globalSystemConfig.ClientTimeout
-		if !t.Enable || t.Timeout == 0 {
+		t := globalSystemConfig.Timeout
+		if t == 0 {
 			return
 		}
 
-		c, cancel := context.WithTimeout(ctx, t.Timeout)
+		c, cancel := context.WithTimeout(ctx, t)
 		defer cancel()
 		ctx.Request.WithContext(c)
 
@@ -72,36 +70,6 @@ func ExtTimeout() HandlerFunc {
 			CustomResponseError(ctx, http.StatusInternalServerError, "Internal Server Timeout")
 			ctx.Abort()
 		case <-done:
-		}
-	}
-}
-
-// ExtCpuLoad Cpu 自适应降载
-func ExtCpuLoad() HandlerFunc {
-	sd := load.NewAdaptiveShedder(load.WithCpuThreshold(globalSystemConfig.CpuThreshold.Threshold))
-	return func(ctx *Context) {
-		if !globalSystemConfig.CpuThreshold.Enable {
-			return
-		}
-		promise, err := sd.Allow()
-		if err != nil {
-			CustomResponseError(ctx, http.StatusInternalServerError, "Internal Server Over Max Request")
-			ctx.Abort()
-		}
-		promise.Pass()
-	}
-}
-
-func ExtLimit() HandlerFunc {
-	max := globalSystemConfig.ClientLimit.Threshold
-	limit := tollbooth.NewLimiter(float64(max), nil)
-	return func(ctx *Context) {
-		if !globalSystemConfig.ClientLimit.Enable {
-			return
-		}
-		if httpError := tollbooth.LimitByRequest(limit, ctx.Writer, ctx.Request); httpError != nil {
-			CustomResponseError(ctx, http.StatusInternalServerError, "Internal Server Limit")
-			ctx.Abort()
 		}
 	}
 }
