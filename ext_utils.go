@@ -7,13 +7,13 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"unsafe"
 )
 
 func requestParams(c *Context) map[string]string {
 	postParams := func(c *Context) string {
 		data, _ := ioutil.ReadAll(c.Request.Body)
-		str := strings.ReplaceAll(string(data), "\n", "")
-		return strings.ReplaceAll(str, " ", "")
+		return *(*string)(unsafe.Pointer(&data))
 	}
 	getParams := func(c *Context) string {
 		return c.Request.URL.Query().Encode()

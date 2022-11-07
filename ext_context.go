@@ -2,6 +2,7 @@ package gin
 
 import (
 	"context"
+	"fmt"
 	"github.com/casbin/casbin/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/go-resty/resty/v2"
@@ -51,7 +52,15 @@ func (c *Context) RespList(page, count, total int, data interface{}) {
 }
 
 func (c *Context) Mysql(name string) *gorm.DB {
-	return globalMysql[name].WithContext(c.Context())
+	db, ok := globalMysql[name]
+	if !ok {
+		return nil
+	} else if db == nil {
+		// 防止mysql 中断
+		//initMysql()
+		fmt.Println("mysql 中断")
+	}
+	return db.WithContext(c.Context())
 }
 
 func (c *Context) Mongo(name string) *mongo.Client {
