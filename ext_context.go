@@ -2,7 +2,6 @@ package gin
 
 import (
 	"context"
-	"fmt"
 	"github.com/casbin/casbin/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/go-resty/resty/v2"
@@ -55,10 +54,6 @@ func (c *Context) Mysql(name string) *gorm.DB {
 	db, ok := globalMysql[name]
 	if !ok {
 		return nil
-	} else if db == nil {
-		// 防止mysql 中断
-		//initMysql()
-		fmt.Println("mysql 中断")
 	}
 	return db.WithContext(c.Context())
 }
