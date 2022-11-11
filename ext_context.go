@@ -11,16 +11,37 @@ import (
 	"sync"
 )
 
-func NewContext(traceId string) *Context {
-	if traceId == "" {
-		traceId = uuid.New().String()
+type Option struct {
+	TraceID string
+}
+
+type option func(*Option)
+
+func (u *Option) Option(opts ...option) {
+	for _, opt := range opts {
+		opt(u)
 	}
-	log := newLog(traceId)
+}
+
+func WithTraceID(id string) option {
+	return func(o *Option) {
+		o.TraceID = id
+	}
+}
+
+func NewContext(opts ...option) *Context {
+	opt := &Option{}
+	opt.Option(opts...)
+
+	if opt.TraceID == "" {
+		opt.TraceID = uuid.New().String()
+	}
+	log := newLog(opt.TraceID)
 	return &Context{
 		mu:          sync.RWMutex{},
 		Keys:        map[string]any{},
 		ServiceName: globalServiceName,
-		TraceID:     traceId,
+		TraceID:     opt.TraceID,
 		Log:         log,
 		Config:      newConfig(log),
 	}
