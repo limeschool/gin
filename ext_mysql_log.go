@@ -82,7 +82,7 @@ func getSqlInfo(err, sql string, rows int64, costTime float64, slow bool) []zap.
 		zap.String("err", err),
 		zap.String("sql", sql),
 		zap.Int64("rows", rows),
-		zap.Float64("time", costTime),
+		zap.String("time", fmt.Sprintf("%vms", costTime)),
 		zap.Bool("slow", slow),
 	}
 }

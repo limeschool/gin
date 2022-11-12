@@ -54,7 +54,7 @@ func parseMysqlConfig(v *viper.Viper) (conf []databaseConfig) {
 			conf[key].MaxIdleConn = 5
 		}
 		if item.SlowThreshold == 0 {
-			conf[key].SlowThreshold = 2
+			conf[key].SlowThreshold = 2000
 
 		}
 		conf[key].SlowThreshold *= 1e6
