@@ -56,12 +56,12 @@ func Init(conf *Config) *viper.Viper {
 	return cs.Init()
 }
 
-var configFile = flag.String("c", "config/dev.json", "the Config file path")
+var configFile = flag.String("c", "", "the Config file path")
 
 func GetConfig(srv string) *viper.Viper {
 	flag.Parse()
 	conf := &Config{}
-	if configFile == nil {
+	if *configFile == "" {
 		addr := os.Getenv("CONFIG_ADDR")
 		token := os.Getenv("CONFIG_TOKEN")
 		if addr == "" {

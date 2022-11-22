@@ -31,6 +31,7 @@ var (
 	DryRun                 = false
 	PrepareStmt            = false
 	DisableForeignKey      = false
+	NewDB                  = true
 )
 
 func parseMysqlConfig(v *viper.Viper) (conf []databaseConfig) {

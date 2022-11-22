@@ -76,6 +76,7 @@ func (c *Context) Mysql(name string) *gorm.DB {
 	if !ok {
 		return nil
 	}
+
 	return db.WithContext(c.Context())
 }
 
