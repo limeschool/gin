@@ -57,17 +57,22 @@ func (c *consul) Get() ([]byte, error) {
 			WaitIndex: *c.wait,
 		}
 	}
+
 	data, meta, err := c.client.KV().Get(c.path, q)
 	if err != nil {
 		return nil, err
 	}
+
 	c.wait = &meta.LastIndex
+	if data == nil {
+		return nil, nil
+	}
 	return data.Value, nil
 }
 
 func (c *consul) Set(value string) error {
 	path := strings.TrimPrefix(c.path, "/")
-	kv := &consulApi.KVPair{Key: path + "key", Value: []byte(value)}
+	kv := &consulApi.KVPair{Key: path, Value: []byte(value)}
 	_, err := c.client.KV().Put(kv, nil)
 	return err
 }
