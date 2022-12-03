@@ -2,6 +2,7 @@ package config_drive
 
 import (
 	"bytes"
+	"errors"
 	consulApi "github.com/hashicorp/consul/api"
 	"github.com/spf13/viper"
 	"log"
@@ -24,6 +25,11 @@ func NewConsul(conf *Config) (ConfigService, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if _, err = client.Status().Leader(); err != nil {
+		return nil, errors.New("consul connect fail")
+	}
+
 	return &consul{client: client, path: conf.Path, tp: conf.Type}, nil
 }
 

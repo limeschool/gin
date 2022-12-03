@@ -28,10 +28,11 @@ func NewEtcd(conf *Config) (ConfigService, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctx, _ := context.WithTimeout(context.TODO(), 10*time.Second)
-	if _, err = client.Get(ctx, "test"); err != nil {
+	ctx, _ := context.WithTimeout(context.TODO(), 5*time.Second)
+	if _, err = client.KV.Get(ctx, "/test"); err != nil {
 		return nil, errors.New("etcd connect fail")
 	}
+
 	return &etcd{client: client, path: conf.Path, tp: conf.Type}, nil
 }
 
